@@ -1,0 +1,369 @@
+[
+    {
+        "id": "922998e205296adf",
+        "type": "tab",
+        "label": "Sonde mapper",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "37b2cadfd590eac9",
+        "type": "comment",
+        "z": "922998e205296adf",
+        "name": "",
+        "info": "https://github.com/projecthorus/radiosonde_auto_rx/wiki/Configuration-Settings",
+        "x": 540,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "c0ad4cf8dceea8e0",
+        "type": "udp in",
+        "z": "922998e205296adf",
+        "name": "",
+        "iface": "",
+        "port": "55673",
+        "ipv": "udp4",
+        "multicast": "false",
+        "group": "0.0.0.0",
+        "datatype": "utf8",
+        "x": 200,
+        "y": 280,
+        "wires": [
+            [
+                "7c1de44d138df65b"
+            ]
+        ]
+    },
+    {
+        "id": "0ce5d5200b07a5ee",
+        "type": "udp in",
+        "z": "922998e205296adf",
+        "name": "",
+        "iface": "",
+        "port": "8942",
+        "ipv": "udp4",
+        "multicast": "false",
+        "group": "192.138.0.113",
+        "datatype": "utf8",
+        "x": 200,
+        "y": 360,
+        "wires": [
+            [
+                "a23356c7501387ec"
+            ]
+        ]
+    },
+    {
+        "id": "a23356c7501387ec",
+        "type": "file",
+        "z": "922998e205296adf",
+        "name": "",
+        "filename": "sonde_short.csv",
+        "filenameType": "str",
+        "appendNewline": true,
+        "createDir": false,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 390,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c56a67d26940ebb3",
+        "type": "file",
+        "z": "922998e205296adf",
+        "name": "",
+        "filename": "sonde_large_2.json",
+        "filenameType": "str",
+        "appendNewline": true,
+        "createDir": false,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 680,
+        "y": 220,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7c1de44d138df65b",
+        "type": "json",
+        "z": "922998e205296adf",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 410,
+        "y": 280,
+        "wires": [
+            [
+                "a1d2819d28224352",
+                "c56a67d26940ebb3",
+                "1c587983d1435018"
+            ]
+        ]
+    },
+    {
+        "id": "a1d2819d28224352",
+        "type": "debug",
+        "z": "922998e205296adf",
+        "name": "debug 32",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 640,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "2a231bda38002aab",
+        "type": "function",
+        "z": "922998e205296adf",
+        "name": "Angle By Distance And Altitude",
+        "func": "let miles = 75;\nlet altitude_meters = msg.payload.altitude;\nlet altitude_feet = altitude_meters * 3.281;\n\n\n\nfunction calculateAngle(distanceMiles, heightFeet) {\n    // Convert distance from miles to feet\n    const distanceFeet = distanceMiles * 5280;\n\n    // Calculate the angle in radians using arctan\n    const angleRadians = Math.atan(heightFeet / distanceFeet);\n\n    // Convert the angle from radians to degrees\n    const angleDegrees = angleRadians * (180 / Math.PI);\n\n    return angleDegrees;\n}\n\n// Example usage:\nconst distanceMiles = miles; // Distance in miles\nconst heightFeet = altitude_feet;  // Height in feet\nconst angle = calculateAngle(distanceMiles, heightFeet);\nmsg.track_data.angle = 'The angle is ' + parseInt(angle) + ' degrees.';\nmsg.track_data.angle_number = parseInt(angle);\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 730,
+        "y": 340,
+        "wires": [
+            [
+                "f431b6ddd231cf71"
+            ]
+        ]
+    },
+    {
+        "id": "f431b6ddd231cf71",
+        "type": "function",
+        "z": "922998e205296adf",
+        "name": "Distance Of Two Coords",
+        "func": "\nlet my_lat = 36.83404;\nlet my_lon = -79.396871;\n\nlet sonde_lat = msg.payload.latitude;\nlet sonde_lon = msg.payload.longitude;\n\n\nfunction toRadians(degrees) {\n    return degrees * Math.PI / 180;\n}\n\nfunction haversineDistance(lat1, lon1, lat2, lon2) {\n    const R = 6371; // Radius of the Earth in kilometers\n    const dLat = toRadians(lat2 - lat1);  // Difference in latitude\n    const dLon = toRadians(lon2 - lon1);  // Difference in longitude\n\n    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +\n              Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *\n              Math.sin(dLon / 2) * Math.sin(dLon / 2);\n\n    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));\n\n    const distance = R * c;  // Distance in kilometers\n    return distance;\n}\n\n// Example usage:\nconst lat1 = my_lat;  // Latitude of point 1\nconst lon1 = my_lon;  // Longitude of point 1\nconst lat2 = sonde_lat;  // Latitude of point 2\nconst lon2 = sonde_lon;  // Longitude of point 2\n\nconst distance = haversineDistance(lat1, lon1, lat2, lon2);\n\nmsg.track_data.distance_number_km = parseInt(distance.toFixed(2));\nmsg.track_data.distance_km = 'The distance between the two points is ' + msg.track_data.distance_number_km + ' kilometers.';\n\nmsg.track_data.distance_number_mi = parseInt(msg.track_data.distance_number_km / 1.609)\nmsg.track_data.distance_mi = 'The distance between the two points is ' + msg.track_data.distance_number_mi + ' miles.';\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 710,
+        "y": 380,
+        "wires": [
+            [
+                "4fff278d113f3cea"
+            ]
+        ]
+    },
+    {
+        "id": "4fff278d113f3cea",
+        "type": "function",
+        "z": "922998e205296adf",
+        "name": "Bearing Between Two Points",
+        "func": "\nlet my_lat = 36.83404;\nlet my_lon = -79.396871;\n\nlet sonde_lat = msg.payload.latitude;\nlet sonde_lon = msg.payload.longitude;\n\n\nfunction toRadians(degrees) {\n    return degrees * Math.PI / 180;\n}\n\nfunction toDegrees(radians) {\n    return radians * 180 / Math.PI;\n}\n\nfunction calculateHeading(lat1, lon1, lat2, lon2) {\n    const lat1Rad = toRadians(lat1);\n    const lon1Rad = toRadians(lon1);\n    const lat2Rad = toRadians(lat2);\n    const lon2Rad = toRadians(lon2);\n\n    const deltaLon = lon2Rad - lon1Rad;\n\n    const x = Math.sin(deltaLon) * Math.cos(lat2Rad);\n    const y = Math.cos(lat1Rad) * Math.sin(lat2Rad) -\n              Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(deltaLon);\n\n    let initialBearing = Math.atan2(x, y);  // In radians\n\n    // Convert radians to degrees\n    initialBearing = toDegrees(initialBearing);\n\n    // Normalize the result to 0-360 degrees\n    if (initialBearing < 0) {\n        initialBearing += 360;\n    }\n\n    return initialBearing;\n}\n\n// Example usage:\nconst lat1 = my_lat;  // Latitude of point 1\nconst lon1 = my_lon;  // Longitude of point 1\nconst lat2 = sonde_lat;  // Latitude of point 2\nconst lon2 = sonde_lon;  // Longitude of point 2\n\nconst heading = calculateHeading(lat1, lon1, lat2, lon2);\nmsg.track_data.heading = 'The heading from point 1 to point 2 is ' + heading.toFixed(2) + ' degrees.';\nmsg.track_data.heading_number = parseInt(heading.toFixed(2));\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 720,
+        "y": 420,
+        "wires": [
+            [
+                "ed5fdb467cb648fb"
+            ]
+        ]
+    },
+    {
+        "id": "ed5fdb467cb648fb",
+        "type": "debug",
+        "z": "922998e205296adf",
+        "name": "debug 35",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "track_data",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 960,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "1c587983d1435018",
+        "type": "function",
+        "z": "922998e205296adf",
+        "name": "function 8",
+        "func": "msg.track_data = {};\n//msg.track_data.distance_km = -1;\n//msg.track_data.distance_mi = -1;\n//msg.track_data.heading = -1;\n//msg.track_data.angle = -1;\n\n//msg.track_data.distance_number = -1;\n//msg.track_data.heading_number = -1;\n//msg.track_data.angle_number = -1;\n\nmsg.track_data_rssi = msg.payload.snr;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 640,
+        "y": 300,
+        "wires": [
+            [
+                "2a231bda38002aab"
+            ]
+        ]
+    },
+    {
+        "id": "05306cebe822769b",
+        "type": "file in",
+        "z": "922998e205296adf",
+        "name": "",
+        "filename": "sonde_large_2.json",
+        "filenameType": "str",
+        "format": "lines",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 400,
+        "y": 480,
+        "wires": [
+            [
+                "a0c878c4616855b9"
+            ]
+        ]
+    },
+    {
+        "id": "8a48f62845988dd4",
+        "type": "inject",
+        "z": "922998e205296adf",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 220,
+        "y": 480,
+        "wires": [
+            [
+                "05306cebe822769b"
+            ]
+        ]
+    },
+    {
+        "id": "87e24f3401e73990",
+        "type": "delay",
+        "z": "922998e205296adf",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "1",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 600,
+        "y": 520,
+        "wires": [
+            [
+                "1c587983d1435018",
+                "70780cd0915eaba3"
+            ]
+        ]
+    },
+    {
+        "id": "a0c878c4616855b9",
+        "type": "json",
+        "z": "922998e205296adf",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 450,
+        "y": 520,
+        "wires": [
+            [
+                "87e24f3401e73990"
+            ]
+        ]
+    },
+    {
+        "id": "70780cd0915eaba3",
+        "type": "debug",
+        "z": "922998e205296adf",
+        "name": "debug 36",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 600,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "6928b4efabd0812f",
+        "type": "debug",
+        "z": "922998e205296adf",
+        "name": "debug 37",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 400,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "4b664f59b9eeeeef",
+        "type": "tcp in",
+        "z": "922998e205296adf",
+        "name": "",
+        "server": "server",
+        "host": "",
+        "port": "4533",
+        "datamode": "stream",
+        "datatype": "buffer",
+        "newline": "",
+        "topic": "",
+        "trim": false,
+        "base64": false,
+        "tls": "",
+        "x": 200,
+        "y": 700,
+        "wires": [
+            [
+                "6928b4efabd0812f"
+            ]
+        ]
+    }
+]
